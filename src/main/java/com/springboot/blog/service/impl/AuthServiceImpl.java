@@ -4,6 +4,7 @@ import com.springboot.blog.entity.Role;
 import com.springboot.blog.entity.User;
 import com.springboot.blog.exception.BlogAPIException;
 import com.springboot.blog.payload.LoginDto;
+import com.springboot.blog.payload.RefreshTokenDto;
 import com.springboot.blog.payload.RegisterDto;
 import com.springboot.blog.repository.RoleRepository;
 import com.springboot.blog.repository.UserRepository;
@@ -14,6 +15,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,18 +31,21 @@ public class AuthServiceImpl implements AuthService {
     private RoleRepository roleRepository;
     private PasswordEncoder passwordEncoder;
     private JwtTokenProvider jwtTokenProvider;
+    private UserDetailsService userDetailsService;
 
 
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            UserRepository userRepository,
                            RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder,
-                           JwtTokenProvider jwtTokenProvider) {
+                           JwtTokenProvider jwtTokenProvider,
+                           UserDetailsService userDetailsService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -82,5 +88,24 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return "User registered successfully!.";
+    }
+
+    @Override
+    public String refresh(RefreshTokenDto refreshTokenDto) {
+
+        JwtTokenProvider.RefreshCandidate candidate =
+                jwtTokenProvider.readRefreshCandidate(refreshTokenDto.getAccessToken());
+
+        if(!jwtTokenProvider.isWithinRefreshWindow(candidate)){
+            throw new BlogAPIException(HttpStatus.UNAUTHORIZED, "Session expired, please log in again");
+        }
+
+        // re-load the user so disabled/deleted accounts and role changes are picked up
+        UserDetails userDetails = userDetailsService.loadUserByUsername(candidate.subject());
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+
+        return jwtTokenProvider.generateToken(authentication);
     }
 }
