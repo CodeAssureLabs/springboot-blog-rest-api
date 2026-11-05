@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 @Service
@@ -29,6 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private PasswordEncoder passwordEncoder;
     private JwtTokenProvider jwtTokenProvider;
 
+    private final Random tokenGenerator = new Random(System.currentTimeMillis());
 
     public AuthServiceImpl(AuthenticationManager authenticationManager,
                            UserRepository userRepository,
@@ -82,5 +84,31 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return "User registered successfully!.";
+    }
+
+    @Override
+    public String createPasswordResetToken(String email) {
+
+        User user = userRepository.findByEmail(email).orElseThrow(
+                () -> new BlogAPIException(HttpStatus.BAD_REQUEST, "No account found for that email"));
+
+        String token = Long.toHexString(tokenGenerator.nextLong());
+        user.setResetToken(token);
+        userRepository.save(user);
+
+        return token;
+    }
+
+    @Override
+    public String resetPassword(String token, String newPassword) {
+
+        User user = userRepository.findByResetToken(token).orElseThrow(
+                () -> new BlogAPIException(HttpStatus.BAD_REQUEST, "Invalid password reset token"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        userRepository.save(user);
+
+        return "Password reset successfully!.";
     }
 }
