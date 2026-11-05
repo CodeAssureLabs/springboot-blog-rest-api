@@ -51,4 +51,18 @@ public class CommentController {
         commentService.deleteComment(postId, commentId);
         return new ResponseEntity<>("Comment deleted successfully", HttpStatus.OK);
     }
+
+    @PutMapping("/posts/{postId}/comments/{id}/hide")
+    public ResponseEntity<CommentDto> hideComment(@PathVariable(value = "postId") Long postId,
+                                                  @PathVariable(value = "id") Long commentId){
+        CommentDto hiddenComment = commentService.setCommentHidden(postId, commentId, true);
+        return new ResponseEntity<>(hiddenComment, HttpStatus.OK);
+    }
+
+    @PutMapping("/posts/{postId}/comments/{id}/unhide")
+    public ResponseEntity<CommentDto> unhideComment(@PathVariable(value = "postId") Long postId,
+                                                    @PathVariable(value = "id") Long commentId){
+        CommentDto visibleComment = commentService.setCommentHidden(postId, commentId, false);
+        return new ResponseEntity<>(visibleComment, HttpStatus.OK);
+    }
 }

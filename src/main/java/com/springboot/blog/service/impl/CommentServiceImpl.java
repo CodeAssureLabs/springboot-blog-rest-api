@@ -38,6 +38,7 @@ public class CommentServiceImpl implements CommentService {
 
         // set post to comment entity
         comment.setPost(post);
+        comment.setHidden(false);
 
         // comment entity to DB
         Comment newComment =  commentRepository.save(comment);
@@ -47,8 +48,8 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<CommentDto> getCommentsByPostId(long postId) {
-        // retrieve comments by postId
-        List<Comment> comments = commentRepository.findByPostId(postId);
+        // retrieve visible comments by postId
+        List<Comment> comments = commentRepository.findByPostIdAndHiddenFalse(postId);
 
         // convert list of comment entities to list of comment dto's
         return comments.stream().map(comment -> mapToDTO(comment)).collect(Collectors.toList());
@@ -108,6 +109,26 @@ public class CommentServiceImpl implements CommentService {
         }
 
         commentRepository.delete(comment);
+    }
+
+    @Override
+    public CommentDto setCommentHidden(Long postId, Long commentId, boolean hidden) {
+        // retrieve post entity by id
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new ResourceNotFoundException("Post", "id", postId));
+
+        // retrieve comment by id
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
+                new ResourceNotFoundException("Comment", "id", commentId));
+
+        if(!comment.getPost().getId().equals(post.getId())){
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "Comment does not belong to post");
+        }
+
+        comment.setHidden(hidden);
+
+        Comment updatedComment = commentRepository.save(comment);
+        return mapToDTO(updatedComment);
     }
 
     private CommentDto mapToDTO(Comment comment){
