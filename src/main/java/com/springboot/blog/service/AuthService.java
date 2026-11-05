@@ -7,4 +7,8 @@ public interface AuthService {
     String login(LoginDto loginDto);
 
     String register(RegisterDto registerDto);
+
+    String createPasswordResetToken(String email);
+
+    String resetPassword(String token, String newPassword);
 }

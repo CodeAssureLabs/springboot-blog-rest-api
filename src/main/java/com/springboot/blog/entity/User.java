@@ -27,6 +27,8 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    private String resetToken;
+
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(name = "users_roles",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
