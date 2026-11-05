@@ -22,6 +22,9 @@ public class Comment {
     private String email;
     private String body;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean hidden = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
